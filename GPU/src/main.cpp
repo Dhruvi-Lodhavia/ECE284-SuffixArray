@@ -111,7 +111,8 @@ int main(int argc, char** argv) {
         GpuSeedTable::deviceArrays.d_intermediate_array,
         GpuSeedTable::deviceArrays.d_intermediate_array2,
         GpuSeedTable::deviceArrays.d_array1,
-        GpuSeedTable::deviceArrays.d_array3);
+        GpuSeedTable::deviceArrays.d_array3,
+        GpuSeedTable::deviceArrays.d_suffix_array);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 
     // Check correctness

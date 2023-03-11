@@ -12,6 +12,7 @@ struct DeviceArrays {
     size_t* d_intermediate_array2;
     size_t* d_array1;
     size_t* d_array3;
+    size_t* d_suffix_array;
     // HINT: if needed, you add more device arrays for the GPU here (make sure to allocate and dellocate them in appropriate functions!)
 
     void allocateDeviceArrays (uint32_t* compressedSeq, uint32_t seqLen, uint32_t kmerSize);
@@ -29,6 +30,7 @@ void seedTableOnGpu (
     size_t* intermediate_array,
     size_t* intermediate_array2,
     size_t* array1,
-    size_t* array3);
+    size_t* array3,
+    size_t* suffix_array);
 }
 
