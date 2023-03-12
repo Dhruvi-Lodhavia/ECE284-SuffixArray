@@ -715,7 +715,7 @@ void GpuSeedTable::seedTableOnGpu (
     //seqEdit end
 
     //seqEdit begin
-    uint32_t shift_val = 0;
+    uint32_t shift_val = 1;
     size_t* done2 = new size_t[N-k+1];
     do {
     /*kmerPosMask<<<numBlocks, blockSize>>>(seqLen, kmerSize, array1,array2);
@@ -726,9 +726,10 @@ void GpuSeedTable::seedTableOnGpu (
     //seqEdit end
 
     //seqEdit begin
-    shift_val = shift_val+1;
+    
     //shifting<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers,array1,array3,shift_val);
     shifting<<<numBlocks, blockSize>>>(seqLen, kmerSize, array3, array1, shift_val);
+    shift_val = shift_val<<1;
     printf("4 done\n");
     //seqEdit end
 
