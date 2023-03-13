@@ -18,4 +18,4 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PWD}/tbb_cmake_build/tbb_cmake_build
 
 ## Run command using nvprof profiler
 ## HINT: Useful for profiling tasks in Assignment 2 
-./seedTable -r ../data/reference.fa -T 8
+./seedTable -r ../data/ref.fa -T 8

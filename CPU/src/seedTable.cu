@@ -183,11 +183,13 @@ __global__ void kmerPosConcat(
         	//i+=bs*gs;
 	}
     }
+
+    printf("0 done\n");
     //seqEdit end
 }
 
 //seqEdit begin
-__global__ void sortInitial(
+/*__global__ void sortInitial(
     uint32_t d_seqLen,
     uint32_t kmerSize,
     size_t* d_array1) {
@@ -207,11 +209,7 @@ __global__ void sortInitial(
 		}
 	}
 	
-	/*for (uint32_t i = 0; i <= N-k; i++) {
-		printf("array1[%u]=%lu\n", i, d_array1[i]);
-	}*/	
-
-}
+}*/
 //seqEdit end
 
 //seqEdit begin
@@ -391,6 +389,7 @@ __global__ void reBucketInitial(
 				lastIndex = i;
         		}
 		}
+		printf("1 done\n");
 }
 //seqEdit end
 
@@ -475,14 +474,15 @@ __global__ void reordering(
     	uint32_t N = d_seqLen;
     	uint32_t k = kmerSize;
 
-        for (uint32_t i = 0; i <= N-k; i++) {
+        /*for (uint32_t i = 0; i <= N-k; i++) {
 		printf("d_array1[%u]=%lu\n", i, d_array1[i]);
-	}
+	}*/
     
     	for (uint32_t i = 0; i <= N-k; i++){
         	uint32_t new_index = d_array1[i];
         	d_array3[new_index] = d_array2[i];
-    	} 
+    	}
+	printf("2 done\n");
 }
 //seqEdit end
 
@@ -536,12 +536,13 @@ __global__ void shifting(
         else{
             d_array1[i] = 0;
         }
-    } 
+    }
+    printf("3 done\n");
 }
 //seqEdit end
 
 //seqEdit begin
-__global__ void sort(
+__global__ void merge(
     uint32_t d_seqLen,
     uint32_t kmerSize,
     size_t* d_array3,
@@ -564,7 +565,7 @@ __global__ void sort(
 		SA[i] = i;
 	}
 
-	for (uint32_t i = 0; i <= N-k; i++) {
+	/*for (uint32_t i = 0; i <= N-k; i++) {
 		for(uint32_t j = 0; j <= N-k-1; j++) {
 			if(d_array4[j] > d_array4[j+1]) {
 				temp = d_array4[j];
@@ -575,12 +576,14 @@ __global__ void sort(
 				SA[j+1] = temp;
 			}	
 		}
-	}
+	}*/
 	
-	for (uint32_t i = 0; i <= N-k; i++) {
+	/*for (uint32_t i = 0; i <= N-k; i++) {
 		d_array1[i] = SA[i];
 		printf("SA[%u]=%lu\n", i, SA[i]);
-	}	
+	}*/
+
+	printf("4 done\n");
 
 }
 
@@ -588,10 +591,18 @@ __global__ void reBucket(
 	uint32_t d_seqLen,
 	uint32_t kmerSize,
 	size_t* d_array4,
-	size_t* d_array2) {
+	size_t* d_array2,
+	size_t* d_array1,
+	size_t* SA) {
 
 		uint32_t N = d_seqLen;
 		uint32_t k = kmerSize;
+
+		for (uint32_t i = 0; i <= N-k; i++) {
+			d_array1[i] = SA[i];
+			//printf("SA[%u]=%lu\n", i, SA[i]);
+			//printf("d_array1[%u]=%lu\n", i, d_array1[i]);
+		}
 
 		uint32_t lastIndex = 0;
 		d_array2[0] = 0;
@@ -604,6 +615,8 @@ __global__ void reBucket(
 				lastIndex = i;
         		}
 		}
+
+  		printf("5 done\n");
 
 }
 //seqEdit end
@@ -625,11 +638,10 @@ __global__ void singleton(
 
     d_done[0] = 1;
 
-    for (uint32_t i = 0; i <= N-k; i++){
+    /*for (uint32_t i = 0; i <= N-k; i++){
     	printf("d_array[%u] = %lu\n", i, d_array2[i]);
-    }
+    }*/
 
-    printf("Hi\n");
     
     for (uint32_t i = 0; i < N-k; i++){
         lastKmer = (d_array2[i]) & mask;
@@ -640,7 +652,8 @@ __global__ void singleton(
         }
     }
 
-    printf("Done = %lu\n", d_done[0]);
+    printf("6 done\n");
+
 
 }
 //seqEdit end
@@ -672,14 +685,13 @@ void GpuSeedTable::seedTableOnGpu (
     int numBlocks =  1; // i.e. number of thread blocks on the GPU
     int blockSize = 1; // i.e. number of GPU threads per thread block
 
-    //done[0] = 0;
     //seqEdit end
 
     uint32_t N = seqLen;
     uint32_t k = kmerSize;
+    int iter = 0;
 
     kmerPosConcat<<<numBlocks, blockSize>>>(compressedSeq, seqLen, kmerSize, array1);
-    printf("0 done\n\n");
     printf("N=%u\n", N);
     printf("k=%u\n", k);
     
@@ -687,18 +699,13 @@ void GpuSeedTable::seedTableOnGpu (
     // Parallel sort the kmerPos array on the GPU device using the thrust
     // library (https://thrust.github.io/)
     //seqEdit begin
-    //thrust::device_ptr<size_t> array1Ptr(array1);
-    //thrust::sort(array1Ptr, array1Ptr+seqLen-kmerSize+1);
-    sortInitial<<<numBlocks, blockSize>>>(seqLen, kmerSize, array1);
-    printf("1 done\n");
+    //thrust::device_ptr<size_t> array4Ptr(array4);
+    //thrust::device_ptr<size_t> SAPtr(SA);
+    thrust::device_ptr<size_t> array1Ptr(array1);
+    thrust::sort(array1Ptr, array1Ptr+seqLen-kmerSize+1);
+    //sortInitial<<<numBlocks, blockSize>>>(seqLen, kmerSize, array1);
     //seqEdit end
 
-    uint32_t numKmers = pow(4, kmerSize);
-    uint32_t range = seqLen;
-    // printf("range = %u",range);
-    // printf("range2 = %u",num);
-    // printf("range3 = %u",((num+blockSize-1)/blockSize));
-    
     //seqEdit begin
     /*kmerOffsetFill<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2, intermediate_array, array1,array3);
     prefixsum<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,array3,range);
@@ -711,7 +718,6 @@ void GpuSeedTable::seedTableOnGpu (
     reductionStep<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,array3,range);*/
     
     reBucketInitial<<<numBlocks, blockSize>>>(seqLen, kmerSize, array1, array2);
-    printf("2 done\n"); 
     //seqEdit end
 
     //seqEdit begin
@@ -722,36 +728,34 @@ void GpuSeedTable::seedTableOnGpu (
 
     reordering<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,array1,array3);*/
     reordering<<<numBlocks, blockSize>>>(seqLen, kmerSize, array1, array2, array3);
-    printf("3 done\n");
     //seqEdit end
 
     //seqEdit begin
-    
     //shifting<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers,array1,array3,shift_val);
     shifting<<<numBlocks, blockSize>>>(seqLen, kmerSize, array3, array1, shift_val);
-    shift_val = shift_val<<1;
-    printf("4 done\n");
+    shift_val = shift_val << 1;
     //seqEdit end
 
     //seqEdit begin
-    sort<<<numBlocks, blockSize>>>(seqLen, kmerSize, array3, array1, SA, array4);
-    printf("5 done\n");
-    reBucket<<<numBlocks, blockSize>>>(seqLen, kmerSize, array4, array2);
-    printf("6 done\n");
+    merge<<<numBlocks, blockSize>>>(seqLen, kmerSize, array3, array1, SA, array4);
+    thrust::device_ptr<size_t> array4Ptr(array4);
+    thrust::device_ptr<size_t> SAPtr(SA);
+    thrust::sort_by_key(array4Ptr, array4Ptr+seqLen-kmerSize+1, SAPtr);
+    reBucket<<<numBlocks, blockSize>>>(seqLen, kmerSize, array4, array2, array1, SA);
     //seqEdit end
    
     //seqEdit begin 
     //singleton<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers,array2,done);
     singleton<<<numBlocks, blockSize>>>(seqLen, kmerSize, array2, done);
-    printf("7 done\n\n");
 
     cudaMemcpy(done2, done, (N-k+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
-    printf("Done2 = %lu\n", done2[0]);
+    printf("Iter = %i\n\n", iter);
+    iter = iter+1;
 
     } while(done2[0] == 0);
     //seqEdit end
 
-    size_t* SA_final = new size_t[N-k+1];
+    /*size_t* SA_final = new size_t[N-k+1];
     cudaMemcpy(SA_final, SA, (N-k+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
 
     FILE *fp;
@@ -759,7 +763,7 @@ void GpuSeedTable::seedTableOnGpu (
 
     for (uint32_t i = 0; i <= N-k; i++) {
     	fprintf(fp, "SA[%u]=%lu\n", i, SA_final[i]);
-    }
+    }*/
 
 
     // printf("%u\n",numKmers);
