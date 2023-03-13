@@ -107,22 +107,23 @@ int main(int argc, char** argv) {
         GpuSeedTable::deviceArrays.d_compressedSeq,
         GpuSeedTable::deviceArrays.d_seqLen,
         kmerSize,
-        GpuSeedTable::deviceArrays.d_array1,
         GpuSeedTable::deviceArrays.d_array2,
+        GpuSeedTable::deviceArrays.d_intermediate_array,
+        GpuSeedTable::deviceArrays.d_intermediate_array2,
+        GpuSeedTable::deviceArrays.d_array1,
         GpuSeedTable::deviceArrays.d_array3,
-        GpuSeedTable::deviceArrays.d_array4,
-        GpuSeedTable::deviceArrays.SA,
-	GpuSeedTable::deviceArrays.d_done);
+        GpuSeedTable::deviceArrays.d_suffix_array,
+         GpuSeedTable::deviceArrays.d_done);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 
     // Check correctness
-    /*timer.Start();
+    timer.Start();
     // int numValues = 15072434;
     int numValues = 25;
     fprintf(stdout, "Printing first %i values of GPU arrays to check correctness.\n", numValues);
     GpuSeedTable::deviceArrays.printValues(numValues);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
-    */
+
     // Delete arrays
     timer.Start();
     fprintf(stdout, "Deallocating CPU and GPU arrays.\n");

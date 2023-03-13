@@ -110,6 +110,12 @@ void GpuSeedTable::DeviceArrays::allocateDeviceArrays (uint32_t* compressedSeq, 
         fprintf(stderr, "GPU_ERROR: cudaMalloc failed!\n");
         exit(1);
     }
+
+    err = cudaMalloc(&d_done, (1)*sizeof(size_t));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: cudaMalloc failed!\n");
+        exit(1);
+    }
     cudaDeviceSynchronize();
 }
 
@@ -124,6 +130,7 @@ void GpuSeedTable::DeviceArrays::deallocateDeviceArrays () {
     cudaFree(d_array1);
     cudaFree(d_array3);
     cudaFree(d_suffix_array);
+    cudaFree(d_done);
 }
 
 /**
@@ -256,8 +263,8 @@ __global__ void prefixsum(
 
     for(uint32_t index = bx; index < ((range+bs-1)/bs); index+=gs){ //loop1
         
-        __shared__ size_t array_shared[8]; //bs size
-        // __shared__ size_t array_shared[2048]; //bs size
+        // __shared__ size_t array_shared[8]; //bs size
+        __shared__ size_t array_shared[2048]; //bs size
 
         uint32_t startAddress = index*(bs);
         if((startAddress+tx) < range){
@@ -411,6 +418,26 @@ __global__ void shifting(
     //kmerpos = B'
     uint32_t N = d_seqLen;
     uint32_t k = kmerSize;
+
+    // for(uint32_t index = bx; index < ((N+bs-1)/bs); index+=gs){ //loop1
+        
+    //     __shared__ size_t temp_memory[8]; //bs size
+    //     // __shared__ size_t temp_memory[2048]; //bs size
+
+    //     uint32_t startAddress = index*(bs);
+    //     if((startAddress+tx) < N-shift_val){
+    //         temp_memory[tx] = d_array3[startAddress + tx +shift_val];
+    //     }
+    //     else{
+    //         temp_memory[tx] = 0;
+    //     }
+    //     __syncthreads();
+
+    //     d_array1[startAddress +tx] = temp_memory[tx];
+
+    // }
+
+
     //need to fill with 0s initially or atleast the shifted positions
     for (uint32_t i = (bx * bs + tx); i <= N-k; i+=bs*gs){
         d_suffix_array[i] = i;
@@ -468,8 +495,8 @@ __global__ void kmerOffsetFill2(
     uint32_t N = d_seqLen;
     uint32_t k = kmerSize;
    
-    uint32_t kmer = 0;
-    uint32_t lastKmer = 0;
+    size_t kmer = 0;
+    size_t lastKmer = 0;
     // uint32_t j = 0;
     // int i = bs*bx+tx;
   
@@ -494,7 +521,8 @@ __global__ void singleton(
     uint32_t d_seqLen,
     uint32_t kmerSize,
     uint32_t numKmers,
-    size_t* d_array2){
+    size_t* d_array2,
+    size_t* d_done){
     // uint32_t &done) {
 
     int tx = threadIdx.x;
@@ -513,18 +541,22 @@ __global__ void singleton(
     uint32_t kmer = 0;
     uint32_t lastKmer = 0;
     size_t mask = ((size_t) 1 << 32)-1;
-    
+    if((bx==0) && (tx==0))
+    {
+        d_done[0] = 1;
+    }
     for (uint32_t i = (bx * bs + tx); i < N-k; i+=bs*gs){
         lastKmer = d_array2[i];
         kmer = d_array2[i+1];
         if(kmer == lastKmer){
+            d_done[0] = 0;
             return;
         }
         
     }
     // if((bx==0) && (tx==0))
     // {
-    //     done = 1;
+    //     d_done[0] = 1;
     // }
 }
 
@@ -543,14 +575,15 @@ void GpuSeedTable::seedTableOnGpu (
     size_t* intermediate_array2,
     size_t* array1,
     size_t* array3,
-    size_t* suffix_array) {
+    size_t* suffix_array,
+    size_t* done) {
 
     // // ASSIGNMENT 2 TASK: make sure to appropriately set the values below
-    // int numBlocks =  65535; // i.e. number of thread blocks on the GPU
-    // int blockSize = 1024; // i.e. number of GPU threads per thread block
+    int numBlocks =  65535; // i.e. number of thread blocks on the GPU
+    int blockSize = 1024; // i.e. number of GPU threads per thread block
 
-     int numBlocks =  2; // i.e. number of thread blocks on the GPU
-    int blockSize = 4; // i.e. number of GPU threads per thread block
+    // int numBlocks =  2; // i.e. number of thread blocks on the GPU
+    // int blockSize = 10; // i.e. number of GPU threads per thread block
 
     kmerPosConcat<<<numBlocks, blockSize>>>(compressedSeq, seqLen, kmerSize, suffix_array);
 
@@ -559,7 +592,7 @@ void GpuSeedTable::seedTableOnGpu (
     // thrust::device_ptr<size_t> array1Ptr(array1);
     thrust::device_ptr<size_t> interPtr(suffix_array);
     thrust::sort(interPtr, interPtr+seqLen-kmerSize+1);
-    thrust::device_ptr<size_t> array1Ptr(array1);
+    // thrust::device_ptr<size_t> array1Ptr(array1);
     // thrust::device_ptr<size_t> interPtr2(suffix_array);
     uint32_t numKmers = pow(4, kmerSize);
     uint32_t range = seqLen;
@@ -579,17 +612,37 @@ void GpuSeedTable::seedTableOnGpu (
 
     kmerPosMask<<<numBlocks, blockSize>>>(seqLen, kmerSize, suffix_array);
     // uint32_t done= 0;
-    uint32_t shift_val;
-    uint32_t iter = 0;
-    for(iter = 0; iter <20;iter++){
+    // cudaDeviceSynchronize();
+    size_t* done2 = new size_t[1];
+    size_t* SA_final = new size_t[seqLen-kmerSize+1];
+    size_t* array2_final = new size_t[seqLen-kmerSize+1];
+    size_t* array1_final = new size_t[seqLen-kmerSize+1];
+    // uint32_t iter = 1;
+    uint32_t shift_val = 1;
+    uint32_t iteration = 0;
+    do{ 
+        // iteration+=1;
         reordering<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,suffix_array,array3);
-        shift_val = pow(2,iter);
         shifting<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers,array1,array3,shift_val,suffix_array);
+        shift_val = shift_val<<1;
         merging<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers,array1,array3);
-        // thrust::device_ptr<size_t> interPtr(suffix_array);
-        // thrust::device_ptr<size_t> array1Ptr(array1);
-        thrust::sort_by_key(array1Ptr, array1Ptr+seqLen-kmerSize+1,interPtr);
+
+        thrust::device_ptr<size_t> array1Ptr(array1);
+        thrust::device_ptr<size_t> suffixPtr(suffix_array);
+        thrust::sort_by_key(array1Ptr, array1Ptr+seqLen-kmerSize+1,suffixPtr);
+
         kmerOffsetFill2<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,array1);
+        cudaMemcpy(array2_final, array2, (seqLen-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
+
+        cudaMemcpy(array1_final, array1, (seqLen-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
+
+        // for (uint32_t i = 0; i <= seqLen-kmerSize; i++) {
+        //     printf("array1[%u]=%lu\n", i, array1_final[i]);
+        // }
+        
+        // for (uint32_t i = 0; i <= seqLen-kmerSize; i++) {
+        //     printf("array2[%u]=%lu\n", i, array2_final[i]);
+        // }
         prefixsum<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,array3,range);
 
         prefixsum<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array3,intermediate_array,num);
@@ -599,16 +652,30 @@ void GpuSeedTable::seedTableOnGpu (
         reductionStep<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,array3,range);
         
         
-        singleton<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers,array2);
-
+        singleton<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers,array2,done);
+        
+        
         
 
+        cudaMemcpy(SA_final, suffix_array, (seqLen-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
+
+        // for (uint32_t i = 0; i <= seqLen-kmerSize; i++) {
+        //     printf("SA[%u]=%lu\n", i, SA_final[i]);
+        // }
 
         
+        cudaMemcpy(done2, done, sizeof(size_t), cudaMemcpyDeviceToHost);
+        // printf("done2 = %zu, iteration = %u",done2[0], iteration);
+    } while(done2[0] == 0);
 
-        
-        // printf("done  = %u",done);
-        // iter+=1;
+    
+    cudaMemcpy(SA_final, suffix_array, (seqLen-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
+
+    FILE *fp;
+    fp = fopen("out_ref.txt", "w");
+
+    for (uint32_t i = 0; i <= seqLen-kmerSize; i++) {
+    	fprintf(fp, "SA[%u]=%lu\n", i, SA_final[i]);
     }
 
 
@@ -627,47 +694,53 @@ void GpuSeedTable::DeviceArrays::printValues(int numValues) {
     size_t* intermediate_array = new size_t[numValues];
     size_t* intermediate_array2 = new size_t[numValues];
     size_t* suffix_array = new size_t[numValues];
+    size_t* done = new size_t[1];
     cudaError_t err;
 
-    // err = cudaMemcpy(array2, d_array2, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!\n");
-    //     exit(1);
-    // }
+    err = cudaMemcpy(array2, d_array2, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!\n");
+        exit(1);
+    }
 
-    // err = cudaMemcpy(array1, d_array1, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-    //     exit(1);
-    // }
-    // err = cudaMemcpy(array3, d_array3, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-    //     exit(1);
-    // }
+    err = cudaMemcpy(array1, d_array1, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
+        exit(1);
+    }
+    err = cudaMemcpy(array3, d_array3, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
+        exit(1);
+    }
 
-    // err = cudaMemcpy(intermediate_array, d_intermediate_array, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-    //     exit(1);
-    // }
+    err = cudaMemcpy(intermediate_array, d_intermediate_array, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
+        exit(1);
+    }
 
-    // err = cudaMemcpy(intermediate_array2, d_intermediate_array2, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-    //     exit(1);
-    // }
+    err = cudaMemcpy(intermediate_array2, d_intermediate_array2, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
+        exit(1);
+    }
 
-    // err = cudaMemcpy(suffix_array, d_suffix_array, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-    //     exit(1);
-    // }
+    err = cudaMemcpy(suffix_array, d_suffix_array, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
+        exit(1);
+    }
 
-
+    err = cudaMemcpy(done, d_done, sizeof(size_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
+        exit(1);
+    }
+    // printf("done = %zu", done[0]);
     // printf("i\tkmerOffset[i]\tkmerPos2[i]\n");
     // for (int i=0; i<numValues; i++) {
-    //     printf("%i\t%zu\t%zu\n", i, array2[i],suffix_array[i]);
+    //     printf("%i\t%zu\t%zu\n", i, suffix_array[i],array2[i]);
     // }
 }
 
