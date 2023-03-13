@@ -579,7 +579,7 @@ void GpuSeedTable::seedTableOnGpu (
     size_t* done) {
 
     // // ASSIGNMENT 2 TASK: make sure to appropriately set the values below
-    int numBlocks =  65535; // i.e. number of thread blocks on the GPU
+    int numBlocks =  1024; // i.e. number of thread blocks on the GPU
     int blockSize = 1024; // i.e. number of GPU threads per thread block
 
     // int numBlocks =  2; // i.e. number of thread blocks on the GPU
@@ -657,7 +657,7 @@ void GpuSeedTable::seedTableOnGpu (
         
         
 
-        cudaMemcpy(SA_final, suffix_array, (seqLen-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
+        // cudaMemcpy(SA_final, suffix_array, (seqLen-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
 
         // for (uint32_t i = 0; i <= seqLen-kmerSize; i++) {
         //     printf("SA[%u]=%lu\n", i, SA_final[i]);
