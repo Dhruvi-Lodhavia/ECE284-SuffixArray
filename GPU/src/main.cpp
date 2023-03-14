@@ -119,9 +119,9 @@ int main(int argc, char** argv) {
     // Check correctness
     timer.Start();
     // int numValues = 15072434;
-    int numValues = 25;
+    uint32_t numValues = GpuSeedTable::deviceArrays.d_seqLen;
     fprintf(stdout, "Printing first %i values of GPU arrays to check correctness.\n", numValues);
-    GpuSeedTable::deviceArrays.printValues(numValues);
+    GpuSeedTable::deviceArrays.printValues(numValues, kmerSize);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 
     // Delete arrays

@@ -111,18 +111,18 @@ int main(int argc, char** argv) {
         GpuSeedTable::deviceArrays.d_array2,
         GpuSeedTable::deviceArrays.d_array3,
         GpuSeedTable::deviceArrays.d_array4,
-        GpuSeedTable::deviceArrays.SA,
+        GpuSeedTable::deviceArrays.d_SA,
 	GpuSeedTable::deviceArrays.d_done);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 
     // Check correctness
-    /*timer.Start();
+    timer.Start();
     // int numValues = 15072434;
-    int numValues = 25;
+    uint32_t numValues = GpuSeedTable::deviceArrays.d_seqLen;
     fprintf(stdout, "Printing first %i values of GPU arrays to check correctness.\n", numValues);
-    GpuSeedTable::deviceArrays.printValues(numValues);
+    GpuSeedTable::deviceArrays.printValues(numValues,kmerSize);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
-    */
+    
     // Delete arrays
     timer.Start();
     fprintf(stdout, "Deallocating CPU and GPU arrays.\n");

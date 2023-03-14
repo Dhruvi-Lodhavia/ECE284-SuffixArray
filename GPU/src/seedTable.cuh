@@ -17,7 +17,7 @@ struct DeviceArrays {
     // HINT: if needed, you add more device arrays for the GPU here (make sure to allocate and dellocate them in appropriate functions!)
 
     void allocateDeviceArrays (uint32_t* compressedSeq, uint32_t seqLen, uint32_t kmerSize);
-    void printValues(int numValues);
+    void printValues(uint32_t numValues,uint32_t kmerSize);
     void deallocateDeviceArrays ();
 };
 

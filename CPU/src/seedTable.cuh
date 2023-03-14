@@ -11,12 +11,12 @@ struct DeviceArrays {
     size_t* d_array2;
     size_t* d_array3;
     size_t* d_array4;
-    size_t* SA;
+    size_t* d_SA;
     size_t* d_done;
     // HINT: if needed, you add more device arrays for the GPU here (make sure to allocate and dellocate them in appropriate functions!)
 
     void allocateDeviceArrays (uint32_t* compressedSeq, uint32_t seqLen, uint32_t kmerSize);
-    void printValues(int numValues);
+    void printValues(uint32_t numValues,uint32_t kmerSize);
     void deallocateDeviceArrays ();
 };
 
