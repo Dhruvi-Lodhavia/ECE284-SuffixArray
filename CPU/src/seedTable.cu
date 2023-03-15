@@ -185,7 +185,7 @@ __global__ void kmerPosConcat(
 	}
     }
 
-    // printf("0 done\n");
+    printf("0 done\n");
     //seqEdit end
 }
 
@@ -780,10 +780,10 @@ void GpuSeedTable::DeviceArrays::printValues(uint32_t numValues, uint32_t kmerSi
     // }
 
     FILE *fp;
-    fp = fopen("out_ref.txt", "w");
+    fp = fopen("out_kmer15.txt", "w");
 
     for (uint32_t i = 0; i <= numValues-kmerSize; i++) {
-    	fprintf(fp, "Suffix_array[%u]=%lu\n",i,SA[i]);
+    	fprintf(fp, "%lu\n",SA[i]);
     }
     // printf("i\tkmerOffset[i]\tkmerPos2[i]\n");
     // for (int i=0; i<numValues; i++) {

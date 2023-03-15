@@ -170,7 +170,7 @@ __global__ void kmerPosConcat(
     // if ((bx == 0) && (tx == 0)) {
     // for (uint32_t i = 0; i <= N-k; i++) {
     
-    while(i<(N-k+1)){
+    while(i<=N-k){
         uint32_t index = i/16;
         uint32_t shift1 = 2*(i%16);
         if (shift1 > 0) {
@@ -232,65 +232,63 @@ __global__ void kmerOffsetFill(
     // during parallelization
      
 
-    // for (uint32_t i = (bx * bs + tx); i < N-k; i+=bs*gs){
-    //         lastKmer = (d_array1[i] >> 32) & mask;
-    //         kmer = (d_array1[i+1] >> 32) & mask;
+    for (uint32_t i = (bx * bs + tx); i < N-k; i+=bs*gs){
+            lastKmer = (d_array1[i] >> 32) & mask;
+            kmer = (d_array1[i+1] >> 32) & mask;
         
-    //     if(kmer == lastKmer){
-    //         d_array2[i+1] = 0;
+        if(kmer == lastKmer){
+            d_array2[i+1] = 0;
+        }
+        else{
+            d_array2[i+1] = i+1;
+        }   
+    }
+
+    // for(uint32_t index = bx; index < ((N-k+1+bs-1)/bs); index+=gs){ 
+    //     __shared__ size_t array_shared1[1025]; //bs size
+    //     __shared__ size_t array_shared2[1024]; //bs size
+
+    //     uint32_t startAddress = index*(bs);
+    //     if((startAddress+tx) < N-k+1){
+    //         if((tx==0) && (index!= 0))
+    //         {
+    //             array_shared1[tx] = d_array1[startAddress + tx-1];
+    //         }
+    //         else if((tx==0) && (index == 0)){
+                
+    //             array_shared1[tx] = 0;
+    //         }   
+    //         array_shared1[tx+1] = d_array1[startAddress + tx];
     //     }
     //     else{
-    //         d_array2[i+1] = i+1;
-    //     }   
+    //         array_shared1[tx+1] = 0;
+    //     }
         
-        
-    // }
+    //     __syncthreads();
 
-    for(uint32_t index = bx; index < ((N-k+1+bs-1)/bs); index+=gs){ 
-        __shared__ size_t array_shared1[1025]; //bs size
-        __shared__ size_t array_shared2[1024]; //bs size
-
-        uint32_t startAddress = index*(bs);
-        if((startAddress+tx) < N-k+1){
-            if((tx==0) && (index!= 0))
-            {
-                array_shared1[tx] = d_array1[startAddress + tx-1];
-            }
-            else if((tx==0) && (index == 0)){
-                
-                array_shared1[tx] = 0;
-            }   
-            array_shared1[tx+1] = d_array1[startAddress + tx];
-        }
-        else{
-            array_shared1[tx+1] = 0;
-        }
-        
-        __syncthreads();
-
-        lastKmer = (array_shared1[tx] >> 32) & mask;
-        kmer = (array_shared1[tx+1] >> 32) & mask;
-        // printf("index = %u tx = %u lastKmer = %u \n",index,tx, lastKmer);
-        // printf("index = %u tx+1 = %u kmer = %u \n",index,tx+1,kmer);
-        if(kmer == lastKmer){
-            array_shared2[tx] = 0;
-            // d_array2[tx+startAddress] =0;
-        }
-        else{
-            array_shared2[tx] = tx+startAddress;
-            // d_array2[tx+startAddress] =tx+startAddress;
-            // printf("index = %u,array_shared2[%u] = %lu, tx+startAddress = %u\n",index,tx,array_shared2,tx+startAddress);
-        } 
+    //     lastKmer = (array_shared1[tx] >> 32) & mask;
+    //     kmer = (array_shared1[tx+1] >> 32) & mask;
+    //     // printf("index = %u tx = %u lastKmer = %u \n",index,tx, lastKmer);
+    //     // printf("index = %u tx+1 = %u kmer = %u \n",index,tx+1,kmer);
+    //     if(kmer == lastKmer){
+    //         array_shared2[tx] = 0;
+    //         // d_array2[tx+startAddress] =0;
+    //     }
+    //     else{
+    //         array_shared2[tx] = tx+startAddress;
+    //         // d_array2[tx+startAddress] =tx+startAddress;
+    //         // printf("index = %u,array_shared2[%u] = %lu, tx+startAddress = %u\n",index,tx,array_shared2,tx+startAddress);
+    //     } 
         
 
-        __syncthreads();
-        // printf("index = %u,array_shared2[%u] = %lu, tx+startAddress = %u\n",index,tx,array_shared2,tx+startAddress);
-        if((startAddress+ tx) < (N-k+1)){
-            d_array2[startAddress + tx] = array_shared2[tx];
-        }
+    //     __syncthreads();
+    //     // printf("index = %u,array_shared2[%u] = %lu, tx+startAddress = %u\n",index,tx,array_shared2,tx+startAddress);
+    //     if((startAddress+ tx) < (N-k+1)){
+    //         d_array2[startAddress + tx] = array_shared2[tx];
+    //     }
 
 
-    }  
+    // }  
 
 
 }
@@ -414,7 +412,7 @@ __global__ void kmerPosMask(
     size_t mask = ((size_t) 1 << 32)-1;
     // size_t kPosConcat = (kmer << 32) + i;
     
-    while(i<(N-k+1)){
+    while(i<=N-k){
         // // (d_kmerPos[i] >> 32) & mask;
         // size_t kmerPosConcat = ((d_kmerPos[i] & mask)<< 32)
         // d_kmerPos[i] = kmerPosConcat + d_kmerOffset[i];
@@ -445,7 +443,7 @@ __global__ void reordering(
     uint32_t N = d_seqLen;
     uint32_t k = kmerSize;
     
-    for (uint32_t i = (bx * bs + tx); i < (N-k+1); i+=bs*gs){
+    for (uint32_t i = (bx * bs + tx); i <= N-k; i+=bs*gs){
         uint32_t new_index = d_array1[i];
         d_array3[new_index] = d_array2[i];
     } 
@@ -495,9 +493,9 @@ __global__ void shifting(
 
 
     // //need to fill with 0s initially or atleast the shifted positions
-    for (uint32_t i = (bx * bs + tx); i < (N-k+1); i+=bs*gs){
+    for (uint32_t i = (bx * bs + tx); i <= N-k; i+=bs*gs){
         d_suffix_array[i] = i;
-        if(i<(N-k+1-shift_val)){
+        if(i<=N-k-shift_val){
             d_array1[i] = d_array3[i+shift_val];
         }
         else{
@@ -525,7 +523,7 @@ __global__ void merging(
     uint32_t N = d_seqLen;
     uint32_t k = kmerSize;
     //need to fill with 0s initially or atleast the shifted positions
-    for (uint32_t i = (bx * bs + tx); i < (N-k+1); i+=bs*gs){
+    for (uint32_t i = (bx * bs + tx); i <= N-k; i+=bs*gs){
         d_array1[i] += d_array3[i]<<32;
     } 
 }
@@ -550,66 +548,66 @@ __global__ void kmerOffsetFill2(
     size_t lastKmer = 0;
 
     
-    for(uint32_t index = bx; index < ((N-k+1+bs-1)/bs); index+=gs){ 
-        __shared__ size_t array_shared1[1025]; //bs size
-        __shared__ size_t array_shared2[1024]; //bs size
+    // for(uint32_t index = bx; index < ((N-k+1+bs-1)/bs); index+=gs){ 
+    //     __shared__ size_t array_shared1[1025]; //bs size
+    //     __shared__ size_t array_shared2[1024]; //bs size
 
-        uint32_t startAddress = index*(bs);
-        if((startAddress+tx) < N-k+1){
-            if((tx==0) && (index!= 0))
-            {
-                array_shared1[tx] = d_array1[startAddress + tx-1];
-            }
-            else if((tx==0) && (index == 0)){
+    //     uint32_t startAddress = index*(bs);
+    //     if((startAddress+tx) < N-k+1){
+    //         if((tx==0) && (index!= 0))
+    //         {
+    //             array_shared1[tx] = d_array1[startAddress + tx-1];
+    //         }
+    //         else if((tx==0) && (index == 0)){
                 
-                array_shared1[tx] = 0;
-            }   
-            array_shared1[tx+1] = d_array1[startAddress + tx];
-        }
-        else{
-            array_shared1[tx+1] = 0;
-        }
+    //             array_shared1[tx] = 0;
+    //         }   
+    //         array_shared1[tx+1] = d_array1[startAddress + tx];
+    //     }
+    //     else{
+    //         array_shared1[tx+1] = 0;
+    //     }
         
-        __syncthreads();
+    //     __syncthreads();
 
-        lastKmer = array_shared1[tx];
-        kmer = array_shared1[tx+1];
-        // printf("index = %u tx = %u lastKmer = %u \n",index,tx, lastKmer);
-        // printf("index = %u tx+1 = %u kmer = %u \n",index,tx+1,kmer);
-        if(kmer == lastKmer){
-            array_shared2[tx] = 0;
-            // d_array2[tx+startAddress] =0;
-        }
-        else{
-            array_shared2[tx] = tx+startAddress;
-            // d_array2[tx+startAddress] =tx+startAddress;
-            // printf("index = %u,array_shared2[%u] = %lu, tx+startAddress = %u\n",index,tx,array_shared2,tx+startAddress);
-        } 
+    //     lastKmer = array_shared1[tx];
+    //     kmer = array_shared1[tx+1];
+    //     // printf("index = %u tx = %u lastKmer = %u \n",index,tx, lastKmer);
+    //     // printf("index = %u tx+1 = %u kmer = %u \n",index,tx+1,kmer);
+    //     if(kmer == lastKmer){
+    //         array_shared2[tx] = 0;
+    //         // d_array2[tx+startAddress] =0;
+    //     }
+    //     else{
+    //         array_shared2[tx] = tx+startAddress;
+    //         // d_array2[tx+startAddress] =tx+startAddress;
+    //         // printf("index = %u,array_shared2[%u] = %lu, tx+startAddress = %u\n",index,tx,array_shared2,tx+startAddress);
+    //     } 
         
 
-        __syncthreads();
-        // printf("index = %u,array_shared2[%u] = %lu, tx+startAddress = %u\n",index,tx,array_shared2,tx+startAddress);
-        if((startAddress+ tx) < (N-k+1)){
-            d_array2[startAddress + tx] = array_shared2[tx];
-        }
+    //     __syncthreads();
+    //     // printf("index = %u,array_shared2[%u] = %lu, tx+startAddress = %u\n",index,tx,array_shared2,tx+startAddress);
+    //     if((startAddress+ tx) < (N-k+1)){
+    //         d_array2[startAddress + tx] = array_shared2[tx];
+    //     }
 
 
-    }  
+    // }  
    
     
 
     
-    // for (uint32_t i = (bx * bs + tx); i < N-k; i+=bs*gs){
-    //     lastKmer = d_array1[i];
-    //     kmer = d_array1[i+1];
+    for (uint32_t i = (bx * bs + tx); i < N-k; i+=bs*gs){
+        lastKmer = d_array1[i];
+        kmer = d_array1[i+1];
         
-    //     if(kmer == lastKmer){
-    //         d_array2[i+1] = 0;
-    //     }
-    //     else{
-    //         d_array2[i+1] = i+1;
-    //     }   
-    // }   
+        if(kmer == lastKmer){
+            d_array2[i+1] = 0;
+        }
+        else{
+            d_array2[i+1] = i+1;
+        }   
+    }   
 }
 
 __global__ void singleton(
@@ -769,22 +767,22 @@ void GpuSeedTable::DeviceArrays::printValues(uint32_t numValues,uint32_t kmerSiz
     size_t* done = new size_t[1];
     cudaError_t err;
 
-    err = cudaMemcpy(array3, d_array3, (numValues-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!\n");
-        exit(1);
-    }
+    // err = cudaMemcpy(array3, d_array3, (numValues-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
+    // if (err != cudaSuccess) {
+    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!\n");
+    //     exit(1);
+    // }
 
-    err = cudaMemcpy(array1, d_array1, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-        exit(1);
-    }
-    err = cudaMemcpy(array2, d_array2, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-        exit(1);
-    }
+    // err = cudaMemcpy(array1, d_array1, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
+    // if (err != cudaSuccess) {
+    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!\n");
+    //     exit(1);
+    // }
+    // err = cudaMemcpy(array2, d_array2, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
+    // if (err != cudaSuccess) {
+    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
+    //     exit(1);
+    // }
 
     // err = cudaMemcpy(intermediate_array, d_intermediate_array, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
     // if (err != cudaSuccess) {
@@ -800,7 +798,7 @@ void GpuSeedTable::DeviceArrays::printValues(uint32_t numValues,uint32_t kmerSiz
 
     err = cudaMemcpy(suffix_array, d_suffix_array, (numValues-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
-        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
+        fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!!\n");
         exit(1);
     }
 
@@ -816,10 +814,10 @@ void GpuSeedTable::DeviceArrays::printValues(uint32_t numValues,uint32_t kmerSiz
     // }
 
     FILE *fp;
-    fp = fopen("out_small_speedup3.txt", "w");
+    fp = fopen("out_kmer15.txt", "w");
 
     for (uint32_t i = 0; i < (numValues-kmerSize+1); i++) {
-    	fprintf(fp, "Suffix_array[%u]=%lu\n", i, suffix_array[i]);
+    	fprintf(fp, "%lu\n",suffix_array[i]);
     }
 }
 
