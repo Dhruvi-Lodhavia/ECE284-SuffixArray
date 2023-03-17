@@ -33,7 +33,7 @@ cp -rf ../../../extract/pattern.txt .
 ```
 
 
-## Check functionality GPU-parallel vs libdivsufsort
+## Check functionality: GPU-parallel vs libdivsufsort
 1. Go to the compare folder.
 ```
 cd ~
