@@ -31,9 +31,8 @@ cp -rf ../../../extract/pattern.txt .
 ```
 ./mksary pattern.txt out_baseline.txt
 ```
-
-
-
+\
+\
 **Check functionality of the proposed implementation against state-of-the-art**
 1. Go to the compare folder.
 ```
@@ -47,5 +46,5 @@ cd project_ece284/compare/
 
 If functionality matches, it flashes the following message:
 PASS: Sequential vs Parallel implementation functionality MATCHING!
-
+\
 Note: you can use this script to compare any two text files. Just run the executable two text files to be compared as arguments.
