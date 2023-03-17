@@ -44,7 +44,7 @@ cd project_ece284/compare/
 ./kseq_test ../../GPU/build/out_GPU.txt ../libdivsufsort/build/examples/out_baseline.txt
 ```
 
-If functionality matches, it flashes the following message-
+If functionality matches, it flashes the following message -
 **PASS: Sequential vs Parallel implementation functionality MATCHING!**
 \
 *Note: you can use this script to compare any two text files. Just run the executable two text files to be compared as arguments.*
