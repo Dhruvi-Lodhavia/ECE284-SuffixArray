@@ -45,6 +45,6 @@ cd project_ece284/compare/
 ```
 
 If functionality matches, it flashes the following message:
-PASS: Sequential vs Parallel implementation functionality MATCHING!
+**PASS: Sequential vs Parallel implementation functionality MATCHING!**
 \
 Note: you can use this script to compare any two text files. Just run the executable two text files to be compared as arguments.
