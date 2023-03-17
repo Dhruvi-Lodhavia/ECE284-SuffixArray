@@ -32,6 +32,7 @@ cp -rf ../../../extract/pattern.txt .
 ./mksary pattern.txt out_baseline.txt
 ```
 
+\
 **Check functionality of the proposed implementation against state-of-the-art**
 1. Go to the compare folder.
 ```
