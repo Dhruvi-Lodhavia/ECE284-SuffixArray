@@ -1,4 +1,4 @@
-<How to run GPU-parallel, sequential codes>
+<TO DO: How to run GPU-parallel, sequential codes>
 
 **Run libdivsufsort**
 1. Go to the extract folder.
