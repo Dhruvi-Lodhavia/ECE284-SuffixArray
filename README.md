@@ -33,7 +33,7 @@ cp -rf ../../../extract/pattern.txt .
 ```
 \
 \
-**Check functionality of the proposed implementation against state-of-the-art**
+**Check functionality of the proposed implementation against state-of-the-art (libdivsufsort)**
 1. Go to the compare folder.
 ```
 cd ~
