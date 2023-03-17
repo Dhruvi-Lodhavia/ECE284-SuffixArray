@@ -1,6 +1,6 @@
 <TO DO: How to run GPU-parallel, sequential codes>
 
-**Run libdivsufsort**
+##Run libdivsufsort
 1. Go to the extract folder.
 ```
 cd ~
@@ -33,7 +33,7 @@ cp -rf ../../../extract/pattern.txt .
 ```
 \
 \
-**Check functionality of the proposed implementation against state-of-the-art (libdivsufsort)**
+##Check functionality of the proposed implementation against state-of-the-art (libdivsufsort)
 1. Go to the compare folder.
 ```
 cd ~
@@ -47,4 +47,4 @@ cd project_ece284/compare/
 If functionality matches, it flashes the following message-
 **PASS: Sequential vs Parallel implementation functionality MATCHING!**
 \
-Note: you can use this script to compare any two text files. Just run the executable two text files to be compared as arguments.
+*Note: you can use this script to compare any two text files. Just run the executable two text files to be compared as arguments.*
