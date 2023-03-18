@@ -1,0 +1,68 @@
+Performing C SOURCE FILE Test HAVE___DECLSPEC_DLLEXPORT_ failed with the following output:
+Change Dir: /datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/gmake "cmTryCompileExec3548357927/fast"
+/usr/bin/gmake -f CMakeFiles/cmTryCompileExec3548357927.dir/build.make CMakeFiles/cmTryCompileExec3548357927.dir/build
+gmake[1]: Entering directory `/dsmlp/datasets/home/home-02/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec3548357927.dir/src.c.o
+/usr/bin/cc   -Wall -DHAVE___DECLSPEC_DLLEXPORT_   -o CMakeFiles/cmTryCompileExec3548357927.dir/src.c.o   -c /datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:1: warning: return type defaults to 'int' [-Wreturn-type]
+ __declspec(dllexport) void func(); void func() { } int main() { func(); return 0; }
+ ^
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c: In function '__declspec':
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:48: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ __declspec(dllexport) void func(); void func() { } int main() { func(); return 0; }
+                                                ^
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:63: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ __declspec(dllexport) void func(); void func() { } int main() { func(); return 0; }
+                                                               ^
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:28: error: declaration for parameter 'func' but no such parameter
+ __declspec(dllexport) void func(); void func() { } int main() { func(); return 0; }
+                            ^
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:63: error: expected '{' at end of input
+ __declspec(dllexport) void func(); void func() { } int main() { func(); return 0; }
+                                                               ^
+gmake[1]: Leaving directory `/dsmlp/datasets/home/home-02/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp'
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:63: warning: control reaches end of non-void function [-Wreturn-type]
+ __declspec(dllexport) void func(); void func() { } int main() { func(); return 0; }
+                                                               ^
+gmake[1]: *** [CMakeFiles/cmTryCompileExec3548357927.dir/src.c.o] Error 1
+gmake: *** [cmTryCompileExec3548357927/fast] Error 2
+
+Source file was:
+__declspec(dllexport) void func(); void func() { } int main() { func(); return 0; }
+Performing C SOURCE FILE Test HAVE___DECLSPEC_DLLIMPORT_ failed with the following output:
+Change Dir: /datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/gmake "cmTryCompileExec3531540178/fast"
+/usr/bin/gmake -f CMakeFiles/cmTryCompileExec3531540178.dir/build.make CMakeFiles/cmTryCompileExec3531540178.dir/build
+gmake[1]: Entering directory `/dsmlp/datasets/home/home-02/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec3531540178.dir/src.c.o
+/usr/bin/cc   -Wall -DHAVE___DECLSPEC_DLLIMPORT_   -o CMakeFiles/cmTryCompileExec3531540178.dir/src.c.o   -c /datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:1: warning: return type defaults to 'int' [-Wreturn-type]
+ __declspec(dllimport) void func(); void func() { } int main() { func(); return 0; }
+ ^
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c: In function '__declspec':
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:48: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ __declspec(dllimport) void func(); void func() { } int main() { func(); return 0; }
+                                                ^
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:63: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+ __declspec(dllimport) void func(); void func() { } int main() { func(); return 0; }
+                                                               ^
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:28: error: declaration for parameter 'func' but no such parameter
+ __declspec(dllimport) void func(); void func() { } int main() { func(); return 0; }
+                            ^
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:63: error: expected '{' at end of input
+ __declspec(dllimport) void func(); void func() { } int main() { func(); return 0; }
+                                                               ^
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp/src.c:1:63: warning: control reaches end of non-void function [-Wreturn-type]
+ __declspec(dllimport) void func(); void func() { } int main() { func(); return 0; }
+                                                               ^
+gmake[1]: Leaving directory `/dsmlp/datasets/home/home-02/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/CMakeTmp'
+gmake[1]: *** [CMakeFiles/cmTryCompileExec3531540178.dir/src.c.o] Error 1
+gmake: *** [cmTryCompileExec3531540178/fast] Error 2
+
+Source file was:
+__declspec(dllimport) void func(); void func() { } int main() { func(); return 0; }

@@ -1,0 +1,8 @@
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/examples/CMakeFiles/basicSA.dir
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/examples/CMakeFiles/bwt.dir
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/lib/CMakeFiles/divsufsort.dir
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/examples/CMakeFiles/mksary.dir
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/examples/CMakeFiles/sasearch.dir
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/examples/CMakeFiles/suftest.dir
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/examples/CMakeFiles/unbwt.dir
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/build/CMakeFiles/uninstall.dir

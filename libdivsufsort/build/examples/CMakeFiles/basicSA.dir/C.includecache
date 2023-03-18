@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/examples/basicSA.c
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+time.h
+-
+divsufsort.h
+-
+
+examples/../include/divsufsort.h
+inttypes.h
+-
+

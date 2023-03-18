@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/examples/kseq.h
+ctype.h
+-
+string.h
+-
+stdlib.h
+-
+
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/examples/kseq_test.c
+zlib.h
+-
+stdio.h
+-
+kseq.h
+/datasets/home/67/767/arbera/project_ece284/libdivsufsort/examples/kseq.h
+stdlib.h
+-
+string.h
+-
+divsufsort.h
+-
+
+examples/../include/divsufsort.h
+inttypes.h
+-
+
