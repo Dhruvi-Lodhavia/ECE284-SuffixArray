@@ -80,7 +80,7 @@ cd ECE284-SuffixArray/extract/
 ```
 2. Copy the dataset (e.g. Homo_sapiens_60M.fa).
 ```
-cp -rf ../../GPU/data/Datasets/Homo_sapiens_60M.fa .
+cp -rf ../GPU/data/Datasets/Homo_sapiens_60M.fa .
 ```
 3. Extract relevant information and store it in another text file.
 ```
