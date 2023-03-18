@@ -20,10 +20,12 @@ tar -xvzf 2019_U9.tar.gz
 
 4. For running the sequential baseline code, 
 ```
+cd ECE284-SuffixArray
 cd Sequential  
 ```
 orelse for running the GPU parallelized code,
 ```
+cd ECE284-SuffixArray
 cd GPU
 ```
 5. Before executing the `run-commands.sh` file, run
