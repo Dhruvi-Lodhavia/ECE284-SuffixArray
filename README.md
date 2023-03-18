@@ -84,6 +84,7 @@ cp -rf ../GPU/data/Datasets/Homo_sapiens_60M.fa .
 ```
 3. Extract relevant information and store it in another text file.
 ```
+chmod u+x kseq_test
 ./kseq_test Homo_sapiens_60M.fa > pattern.txt
 ```
 4. Go to the libdivsufsort folder.
