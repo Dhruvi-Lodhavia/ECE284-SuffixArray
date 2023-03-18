@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(seedTable-build)
+project(suffix-build)
 
 set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
 find_package(CUDA 10.0 REQUIRED)
@@ -20,10 +20,10 @@ include(${TBB_DIR}/cmake/TBBBuild.cmake)
 tbb_build(TBB_ROOT ${TBB_DIR} CONFIG_DIR TBB_DIR MAKE_ARGS tbb_cpf=1)
 find_package(TBB REQUIRED tbbmalloc tbbmalloc_proxy tbb_preview)
 
-add_executable (seedTable
-    src/seedTable.cu
+add_executable (suffix
+    src/suffix.cu
     src/twoBitCompressor.cpp
     src/main.cpp)
 
-target_link_libraries(seedTable PRIVATE ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${TBB_IMPORTED_TARGETS})
+target_link_libraries(suffix PRIVATE ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${TBB_IMPORTED_TARGETS})
 

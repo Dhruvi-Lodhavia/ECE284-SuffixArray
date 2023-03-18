@@ -1,10 +1,66 @@
-<TO DO: How to run GPU-parallel, sequential codes>
+## Setting Up GPU and Sequential codes
+
+1. SSH into the DSMLP server (dsmlp-login.ucsd.edu) using the AD account. MacOS and Linux users can SSH into the server using the following command (replace `dlodhavia` with your username)
+
+```
+ssh dlodhavia@dsmlp-login.ucsd.edu
+```
+2. Next, clone the project repository in your HOME directory using the following command
+```
+cd ~
+git clone https://github.com/Dhruvi-Lodhavia/ECE284-SuffixArray.git
+```
+
+3. Download a copy of the TBB version 2019_U9 into your HOME directory:
+
+```
+wget https://github.com/oneapi-src/oneTBB/archive/2019_U9.tar.gz
+tar -xvzf 2019_U9.tar.gz
+```
+
+4. For running the sequential baseline code, 
+```
+cd Sequential  
+```
+orelse for running the GPU parallelized code,
+```
+cd GPU
+```
+5. Before executing the `run-commands.sh` file, run
+```
+chmod u+x run_command.sh
+```
+in order to make the .sh file an executable. 
+This would have to be done in both sequential and gpu folders.
+
+6. The datasets are given in the `GPU/data` folder. Copy the dataset you want to run in sequential by(e.g. Homo_sapiens_60M.fa). by
+```
+cp -rf ../GPU/data/Homo_sapiens_60M.fa .
+```
+
+7. Modify the `run-commands.sh` file according to the dataset being used
+
+
+8. We will be using a Docker container, namely `yatisht/ece284-wi23:latest`, for submitting a job on the cluster containing the right virtual environment to build and test the code. To submit a job that executes `run-commands.sh` script located inside the `Sequential or GPU` directory on a VM instance with 8 CPU cores, 16 GB RAM and 1 GPU device (this is the maxmimum allowed request on the DSMLP platform), the following command can be executed from the VS Code or DSMLP Shell Terminal (replace the username and directory names below appropriately):
+
+```
+ssh yturakhia@dsmlp-login.ucsd.edu /opt/launch-sh/bin/launch.sh -c 8 -g 1 -m 16 -i yatisht/ece284-wi23:latest -f ${HOME}/ECE284-SuffixArray/Sequential/run-commands.sh
+```
+or
+```
+ssh yturakhia@dsmlp-login.ucsd.edu /opt/launch-sh/bin/launch.sh -c 8 -g 1 -m 16 -i yatisht/ece284-wi23:latest -f ${HOME}/ECE284-SuffixArray/GPU/run-commands.sh
+```
+
+9. steps for comparing results are given at the end of README
+
+
+
 
 ## Run libdivsufsort
 1. Go to the extract folder.
 ```
 cd ~
-cd project_ece284/extract/
+cd ECE284-SuffixArray/extract/
 ```
 2. Copy the dataset (e.g. Homo_sapiens_60M.fa).
 ```
@@ -37,7 +93,7 @@ cp -rf ../../../extract/pattern.txt .
 1. Go to the compare folder.
 ```
 cd ~
-cd project_ece284/compare/
+cd ECE284-SuffixArray/compare/
 ```
 2. Run the code to compare the text file results obtained from the proposed implementation and libdivsufsort.
 ```

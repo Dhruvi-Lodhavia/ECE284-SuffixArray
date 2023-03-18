@@ -14,8 +14,8 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PWD}/tbb_cmake_build/tbb_cmake_build
 
 ## Basic run with 8 threads and kmerSize of 12
 ## HINT: needs changes to parameter values for Assignment 1
-# ./seedTable --reference ../data/reference.fa --numThreads 8
+# ./suffix --reference ../data/reference.fa --numThreads 8
 
 ## Run command using nvprof profiler
 ## HINT: Useful for profiling tasks in Assignment 2 
-./seedTable -r ../data/ref.fa -T 8
+./suffix -r ../data/reference.fa -T 8

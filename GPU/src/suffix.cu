@@ -1,4 +1,4 @@
-#include "seedTable.cuh"
+#include "suffix.cuh"
 #include <stdio.h>
 #include <thrust/sort.h>
 #include <thrust/scan.h>
@@ -6,7 +6,6 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <math.h>
-// #include <lock.h>
 
 /**
  * Prints information for each available GPU device on stdout
@@ -41,10 +40,10 @@ void printGpuProperties () {
 
 /**
  * Allocates arrays on the GPU device for (i) storing the compressed sequence
- * (ii) kmer offsets of the seed table (iii) kmer positions of the seed table
+  (ii) storing B, B2,suffix array values and other intermediate arrays for operations
  * Size of the arrays depends on the input sequence length and kmer size
  */
-void GpuSeedTable::DeviceArrays::allocateDeviceArrays (uint32_t* compressedSeq, uint32_t seqLen, uint32_t kmerSize) {
+void Gpusuffix::DeviceArrays::allocateDeviceArrays (uint32_t* compressedSeq, uint32_t seqLen, uint32_t kmerSize) {
     cudaError_t err;
 
     d_seqLen = seqLen;
@@ -68,21 +67,21 @@ void GpuSeedTable::DeviceArrays::allocateDeviceArrays (uint32_t* compressedSeq, 
         exit(1);
     }
 
-    // Allocate memory on GPU device for storing the kmer offset array
+  
     err = cudaMalloc(&d_array2, (seqLen-kmerSize+1)*sizeof(size_t));
     if (err != cudaSuccess) {
         fprintf(stderr, "GPU_ERROR: cudaMalloc failed!\n");
         exit(1);
     }
 
-    // Allocate memory on GPU device for storing the kmer offset array
+
     err = cudaMalloc(&d_intermediate_array, (seqLen-kmerSize+1)*sizeof(size_t));
     if (err != cudaSuccess) {
         fprintf(stderr, "GPU_ERROR: cudaMalloc failed!\n");
         exit(1);
     }
 
-    // Allocate memory on GPU device for storing the kmer offset array
+    
     err = cudaMalloc(&d_intermediate_array2, (seqLen-kmerSize+1)*sizeof(size_t));
     if (err != cudaSuccess) {
         fprintf(stderr, "GPU_ERROR: cudaMalloc failed!\n");
@@ -97,7 +96,7 @@ void GpuSeedTable::DeviceArrays::allocateDeviceArrays (uint32_t* compressedSeq, 
         fprintf(stderr, "GPU_ERROR: cudaMalloc failed!\n");
         exit(1);
     }
-    // cudaDeviceSynchronize();
+
 
     err = cudaMalloc(&d_array3, (seqLen-kmerSize+1)*sizeof(size_t));
     if (err != cudaSuccess) {
@@ -122,7 +121,7 @@ void GpuSeedTable::DeviceArrays::allocateDeviceArrays (uint32_t* compressedSeq, 
 /**
  * Free allocated GPU device memory for different arrays
  */
-void GpuSeedTable::DeviceArrays::deallocateDeviceArrays () {
+void Gpusuffix::DeviceArrays::deallocateDeviceArrays () {
     cudaFree(d_compressedSeq);
     cudaFree(d_array2);
     cudaFree(d_intermediate_array);
@@ -137,7 +136,7 @@ void GpuSeedTable::DeviceArrays::deallocateDeviceArrays () {
  * Finds kmers for the compressed sequence creates an array with elements
  * containing the 64-bit concatenated value consisting of the kmer value in the
  * first 32 bits and the kmer position in the last 32 bits. The values are
- * stored in the arrary kmerPos, with i-th element corresponding to the i-th
+ * stored in the arrary d_array1 with i-th element corresponding to the i-th
  * kmer in the sequence
  *
  * ASSIGNMENT 2 TASK: parallelize this function
@@ -151,7 +150,7 @@ __global__ void kmerPosConcat(
     int tx = threadIdx.x;
     int bx = blockIdx.x;
 
-    // HINT: Values below could be useful for parallelizing the code
+    
     int bs = blockDim.x;
     int gs = gridDim.x;
 
@@ -164,11 +163,6 @@ __global__ void kmerPosConcat(
     uint32_t mask = (1 << 2*k)-1;
     size_t kmer = 0;
     
-    // HINT: the if statement below ensures only the first thread of the first
-    // block does all the computation. This statement might have to be removed
-    // during parallelization
-    // if ((bx == 0) && (tx == 0)) {
-    // for (uint32_t i = 0; i <= N-k; i++) {
     
     while(i<=N-k){
         uint32_t index = i/16;
@@ -193,12 +187,8 @@ __global__ void kmerPosConcat(
 }
 
 /**
- * Generates the kmerOffset array using the sorted kmerPos array consisting of
- * the kmer and positions. Requires iterating through the kmerPos array and
- * finding indexes where the kmer values change, depending on which the
- * kmerOffset values are determined.
- *
- * ASSIGNMENT 2 TASK: parallelize this function
+ * This is the first part of rebucketing stage where threads at index i and i+1
+ * compare and give i if they are unequal and 0 if they are equal
  */
 __global__ void kmerOffsetFill(
     uint32_t d_seqLen,
@@ -209,27 +199,15 @@ __global__ void kmerOffsetFill(
 
     int tx = threadIdx.x;
     int bx = blockIdx.x;
-    // HINT: Values below could be useful for parallelizing the code
     int bs = blockDim.x;
     int gs = gridDim.x;
-
-    // int ty = threadIdx.y;
-    // int by = blockIdx.y;
-    // HINT: Values below could be useful for parallelizing the code
-    // int bsy = blockDim.y;
-    // Lock myLock;
     uint32_t N = d_seqLen;
     uint32_t k = kmerSize;
    
     size_t mask = ((size_t) 1 << 32)-1;
     uint32_t kmer = 0;
     uint32_t lastKmer = 0;
-    // uint32_t j = 0;
-    // int i = bs*bx+tx;
-  
-    // HINT: the if statement below ensures only the first thread of the first
-    // block does all the computation. This statement might have to be removed
-    // during parallelization
+
      
     for (uint32_t i = (bx * bs + tx); i < N-k; i+=bs*gs){
             lastKmer = (d_array1[i] >> 32) & mask;
@@ -244,13 +222,13 @@ __global__ void kmerOffsetFill(
     }
 }
 
+//This kernel computes prefix scan with max by using shared memory. it calculates 
+//per block prefix scan
 __global__ void prefixsum(
     uint32_t d_seqLen,
     uint32_t kmerSize,
     uint32_t numKmers,
     size_t* d_array2,
-    // size_t* d_intermediate_array,
-    // size_t* d_kmerPos,
     size_t* d_array3,
     uint32_t range) {
 
@@ -258,16 +236,14 @@ __global__ void prefixsum(
     uint32_t k = kmerSize;
     int tx = threadIdx.x;
     int bx = blockIdx.x;
-    // HINT: Values below could be useful for parallelizing the code
     int bs = blockDim.x;
     int gs = gridDim.x;
     
 
-    for(uint32_t index = bx; index < ((range+bs-1)/bs); index+=gs){ //loop1
+    for(uint32_t index = bx; index < ((range+bs-1)/bs); index+=gs){ 
         
-        // __shared__ size_t array_shared[8]; //bs size
-        __shared__ size_t array_shared[2048]; //bs size
-
+        __shared__ size_t array_shared[2048]; 
+        //transfer contents from global to shared
         uint32_t startAddress = index*(bs);
         if((startAddress+tx) < range){
             array_shared[tx] = d_array2[startAddress + tx];
@@ -277,15 +253,12 @@ __global__ void prefixsum(
         }
         __syncthreads();
         int n = bs;
-        // int m = tx;
-        // int offset = 1;
-        // uint32_t mappingScore = 0;
 
-        
+
+        //use upsweep and downsweep for computing prefix scan
         for (int offset=1; offset<n; offset*=2) {
             int val = (tx + 1) * offset * 2 - 1;
             if (val< n) {
-                // kmerOffset_shared[val] += kmerOffset_shared[val - offset];
                 array_shared[val] = max(array_shared[val - offset], array_shared[val]);
             }
             __syncthreads();
@@ -296,35 +269,33 @@ __global__ void prefixsum(
             __syncthreads();
             int val = (tx + 1) * offset * 2 - 1;
             if (val < n) {
-                // kmerOffset_shared[val+offset] += kmerOffset_shared[val];
                 array_shared[val+offset] = max(array_shared[val],array_shared[val+offset]);
             }
         }
         __syncthreads();
+        //store back to global
         if((startAddress+ tx) < N-k+1){
             d_array2[startAddress + tx] = array_shared[tx];
         }
+        //store max value of each block in another array
         d_array3[index] = array_shared[n-1];
     }
 }
 
+//in this step we compute max of previous block group with present block group
 __global__ void reductionStep(
     uint32_t d_seqLen,
     uint32_t kmerSize,
     uint32_t numKmers,
     size_t* d_array2,
-    // size_t* d_intermediate_array,
-    // size_t* d_kmerPos,
     size_t* d_array3,
     uint32_t range) {
 
     int tx = threadIdx.x;
     int bx = blockIdx.x;
-    // HINT: Values below could be useful for parallelizing the code
     int bs = blockDim.x;
     int gs = gridDim.x;
-
-    for(uint32_t index = bx; index< (range/bs)+1; index+=gs){ //loop3
+    for(uint32_t index = bx; index< (range/bs)+1; index+=gs){ 
         uint32_t startAddress = index*(bs);
         if(((startAddress+tx) < range) && (index!=0)){
             d_array2[startAddress + tx] = max(d_array3[index-1],d_array2[startAddress + tx]);
@@ -336,9 +307,8 @@ __global__ void reductionStep(
 }
 
     /**
-    * Masks the first 32 bits of the elements in the kmerPos array
+    * Masks the first 32 bits of the elements in the array1 array
     *
-    * ASSIGNMENT 2 TASK: parallelize this function
     */
 __global__ void kmerPosMask(
     uint32_t d_seqLen,
@@ -348,10 +318,6 @@ __global__ void kmerPosMask(
     
     int tx = threadIdx.x;
     int bx = blockIdx.x;
-
-    
-
-    // HINT: Values below could be useful for parallelizing the code
     int bs = blockDim.x;
     int gs = gridDim.x;
 
@@ -361,24 +327,19 @@ __global__ void kmerPosMask(
     uint32_t k = kmerSize;
 
     size_t mask = ((size_t) 1 << 32)-1;
-    // size_t kPosConcat = (kmer << 32) + i;
     
     while(i<=N-k){
-        // // (d_kmerPos[i] >> 32) & mask;
-        // size_t kmerPosConcat = ((d_kmerPos[i] & mask)<< 32)
-        // d_kmerPos[i] = kmerPosConcat + d_kmerOffset[i];
         d_array1[i] = (d_array1[i] & mask);
         i+=bs*gs;
         }
 }
 
+//SA to ISA conversion using map parallelism
 __global__ void reordering(
     uint32_t d_seqLen,
     uint32_t kmerSize,
     uint32_t numKmers,
-    size_t* d_array2,
-    // size_t* d_intermediate_array,
-    // size_t* d_kmerPos,
+    size_t* d_array2,,
     size_t* d_array1,
     size_t* d_array3) {
 
@@ -386,11 +347,6 @@ __global__ void reordering(
     int bx = blockIdx.x;
     int bs = blockDim.x;
     int gs = gridDim.x;
-
-    // int i = bs*bx+tx;
-    //kmerpos = SA
-    //kmer offset = B
-    //kmerpos = B'
     uint32_t N = d_seqLen;
     uint32_t k = kmerSize;
     
@@ -400,6 +356,8 @@ __global__ void reordering(
     } 
 }
 
+//shifting by an offset shift_val using map parallelism
+//assigning value i at index i in suffix array for sorting later
 __global__ void shifting(
     uint32_t d_seqLen,
     uint32_t kmerSize,
@@ -414,15 +372,9 @@ __global__ void shifting(
     int bs = blockDim.x;
     int gs = gridDim.x;
 
-    // int i = bs*bx+tx;
-    //kmerpos = SA
-    //kmer offset = B
-    //kmerpos = B'
     uint32_t N = d_seqLen;
     uint32_t k = kmerSize;
 
-
-    //need to fill with 0s initially or atleast the shifted positions
     for (uint32_t i = (bx * bs + tx); i <= N-k; i+=bs*gs){
         d_suffix_array[i] = i;
         if(i<=N-k-shift_val){
@@ -434,6 +386,7 @@ __global__ void shifting(
     } 
 }
 
+//merging array B and B2 so they can be sorted later
 __global__ void merging(
     uint32_t d_seqLen,
     uint32_t kmerSize,
@@ -446,18 +399,16 @@ __global__ void merging(
     int bs = blockDim.x;
     int gs = gridDim.x;
 
-    // int i = bs*bx+tx;
-    //kmerpos = SA
-    //kmer offset = B
-    //kmerpos = B'
     uint32_t N = d_seqLen;
     uint32_t k = kmerSize;
-    //need to fill with 0s initially or atleast the shifted positions
     for (uint32_t i = (bx * bs + tx); i <= N-k; i+=bs*gs){
         d_array1[i] += d_array3[i]<<32;
     } 
 }
 
+//performs bucketing operation just like kmeroffsetfill
+//there we performed bucketing on lower 32 bits
+//here we do it on all 64 bits
 __global__ void kmerOffsetFill2(
     uint32_t d_seqLen,
     uint32_t kmerSize,
@@ -467,7 +418,6 @@ __global__ void kmerOffsetFill2(
 
     int tx = threadIdx.x;
     int bx = blockIdx.x;
-    // HINT: Values below could be useful for parallelizing the code
     int bs = blockDim.x;
     int gs = gridDim.x;
 
@@ -493,34 +443,32 @@ __global__ void kmerOffsetFill2(
     }   
 }
 
+//checks if all values are unique 
 __global__ void singleton(
     uint32_t d_seqLen,
     uint32_t kmerSize,
     uint32_t numKmers,
     size_t* d_array2,
     size_t* d_done){
-    // uint32_t &done) {
 
     int tx = threadIdx.x;
     int bx = blockIdx.x;
     int bs = blockDim.x;
     int gs = gridDim.x;
 
-    // int i = bs*bx+tx;
-    //kmerpos = SA
-    //kmer offset = B
-    //kmerpos = B'
     uint32_t N = d_seqLen;
     uint32_t k = kmerSize;
-    //need to fill with 0s initially or atleast the shifted positions
 
     uint32_t kmer = 0;
     uint32_t lastKmer = 0;
-    size_t mask = ((size_t) 1 << 32)-1;
+    //initialize done to be 0 initially
     if((bx==0) && (tx==0))
     {
         d_done[0] = 1;
     }
+    //if consecutive values are same. break and done =0
+    //many threads can compete and try to write done = 0
+    //but does not matter as it can only overwrite 0
     for (uint32_t i = (bx * bs + tx); i < N-k; i+=bs*gs){
         lastKmer = d_array2[i];
         kmer = d_array2[i+1];
@@ -530,19 +478,15 @@ __global__ void singleton(
         }
         
     }
-    // if((bx==0) && (tx==0))
-    // {
-    //     d_done[0] = 1;
-    // }
+
 }
 
 
 
 /**
- * Constructs seed table, consisting of kmerOffset and kmerPos arrrays
- * on the GPU.
+ * Constructs suffix array on gpu
 */
-void GpuSeedTable::seedTableOnGpu (
+void Gpusuffix::suffixOnGpu (
     uint32_t* compressedSeq,
     uint32_t seqLen,
     uint32_t kmerSize,
@@ -554,28 +498,23 @@ void GpuSeedTable::seedTableOnGpu (
     size_t* suffix_array,
     size_t* done) {
 
-    // // ASSIGNMENT 2 TASK: make sure to appropriately set the values below
+
     int numBlocks =  65535; // i.e. number of thread blocks on the GPU
     int blockSize = 1024; // i.e. number of GPU threads per thread block
 
-    // int numBlocks =  2; // i.e. number of thread blocks on the GPU
-    // int blockSize = 4; // i.e. number of GPU threads per thread block
+
 
     kmerPosConcat<<<numBlocks, blockSize>>>(compressedSeq, seqLen, kmerSize, suffix_array);
 
-    // Parallel sort the kmerPos array on the GPU device using the thrust
+    // Parallel sort the suffixrray array on the GPU device using the thrust
     // library (https://thrust.github.io/)
     // thrust::device_ptr<size_t> array1Ptr(array1);
     thrust::device_ptr<size_t> interPtr(suffix_array);
     thrust::sort(interPtr, interPtr+seqLen-kmerSize+1);
-    // thrust::device_ptr<size_t> array1Ptr(array1);
-    // thrust::device_ptr<size_t> interPtr2(suffix_array);
     uint32_t numKmers = pow(4, kmerSize);
     uint32_t range = (seqLen-kmerSize+1);
-    // printf("range = %u",range);
-    // printf("range2 = %u",num);
-    // printf("range3 = %u",((num+blockSize-1)/blockSize));
-    
+
+    //rebucketing start
     kmerOffsetFill<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,suffix_array);
     prefixsum<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,array3,range);
     uint32_t num = ((range+blockSize-1)/blockSize);
@@ -585,14 +524,11 @@ void GpuSeedTable::seedTableOnGpu (
     reductionStep<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, intermediate_array,intermediate_array2,((range/blockSize)/blockSize));
     reductionStep<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array3,intermediate_array,(range/blockSize));
     reductionStep<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,array3,range);
-
     kmerPosMask<<<numBlocks, blockSize>>>(seqLen, kmerSize, suffix_array);
-    // uint32_t done= 0;
-    // cudaDeviceSynchronize();
+
     size_t* done2 = new size_t[1];
-    // uint32_t iter = 1;
     uint32_t shift_val = 1;
-    uint32_t iteration = 0;
+    //loop repeats till done = 1
     do{ 
 
         reordering<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers, array2,suffix_array,array3);
@@ -616,18 +552,7 @@ void GpuSeedTable::seedTableOnGpu (
         
         singleton<<<numBlocks, blockSize>>>(seqLen, kmerSize, numKmers,array2,done);
         
-        
-        
-
-        // cudaMemcpy(SA_final, suffix_array, (seqLen-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
-
-        // for (uint32_t i = 0; i <= seqLen-kmerSize; i++) {
-        //     printf("SA[%u]=%lu\n", i, SA_final[i]);
-        // }
-
-        
         cudaMemcpy(done2, done, sizeof(size_t), cudaMemcpyDeviceToHost);
-        // printf("done2 = %zu, iteration = %u",done2[0], iteration);
     } while(done2[0] == 0);
     
 
@@ -636,11 +561,8 @@ void GpuSeedTable::seedTableOnGpu (
     // correct runtime profiling results for this function.
     cudaDeviceSynchronize();
 }
-/**
- * Prints the fist N(=numValues) values of kmer offset and position tables to
- * help with the debugging of Assignment 2
- */
-void GpuSeedTable::DeviceArrays::printValues(uint32_t numValues,uint32_t kmerSize) {
+
+void Gpusuffix::DeviceArrays::printValues(uint32_t numValues,uint32_t kmerSize) {
     size_t* array2 = new size_t[numValues-kmerSize+1];
     size_t* array1 = new size_t[numValues-kmerSize+1];
     size_t* array3 = new size_t[numValues-kmerSize+1];
@@ -650,54 +572,17 @@ void GpuSeedTable::DeviceArrays::printValues(uint32_t numValues,uint32_t kmerSiz
     size_t* done = new size_t[1];
     cudaError_t err;
 
-    // err = cudaMemcpy(array3, d_array3, (numValues-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!\n");
-    //     exit(1);
-    // }
-
-    // err = cudaMemcpy(array1, d_array1, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!\n");
-    //     exit(1);
-    // }
-    // err = cudaMemcpy(array2, d_array2, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-    //     exit(1);
-    // }
-
-    // err = cudaMemcpy(intermediate_array, d_intermediate_array, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-    //     exit(1);
-    // }
-
-    // err = cudaMemcpy(intermediate_array2, d_intermediate_array2, numValues*sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-    //     exit(1);
-    // }
-
+   
+ 
     err = cudaMemcpy(suffix_array, d_suffix_array, (numValues-kmerSize+1)*sizeof(size_t), cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
         fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!!\n");
         exit(1);
     }
 
-    // err = cudaMemcpy(done, d_done, sizeof(size_t), cudaMemcpyDeviceToHost);
-    // if (err != cudaSuccess) {
-    //     fprintf(stderr, "GPU_ERROR: cudaMemCpy failed!!!\n");
-    //     exit(1);
-    // }
-    // printf("done = %zu", done[0]);
-    // printf("i\tkmerOffset[i]\tkmerPos2[i]\n");
-    // for (int i=0; i<numValues; i++) {
-    //     printf("%i\t%zu\t%zu\n", i, suffix_array[i],array2[i]);
-    // }
-
+    //writing suffix array in a file 
     FILE *fp;
-    fp = fopen("out_120mil.txt", "w");
+    fp = fopen("out.txt", "w");
 
     for (uint32_t i = 0; i < (numValues-kmerSize+1); i++) {
     	fprintf(fp, "%lu\n",suffix_array[i]);

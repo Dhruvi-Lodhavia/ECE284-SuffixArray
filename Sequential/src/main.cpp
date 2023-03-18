@@ -2,7 +2,7 @@
 #include <vector>
 #include <boost/program_options.hpp>
 #include <tbb/task_scheduler_init.h>
-#include "seedTable.cuh"
+#include "suffix.cuh"
 #include "twoBitCompressor.hpp"
 #include "kseq.h"
 #include "zlib.h"
@@ -77,9 +77,6 @@ int main(int argc, char** argv) {
     printf("Sequence size: %zu\n", record->seq.l);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 
-    // Compress the sequence using two-bit encoding
-    // ASSIGNMENT 1 TASK: Parallelize the function twoBitCompress below (see
-    // src/twoBitCompress.cpp for details)
     fprintf(stdout, "Compressing input sequence using two-bit encoding.\n");
     uint32_t twoBitCompressedSize = (record->seq.l+15)/16;
     uint32_t * twoBitCompressed = new uint32_t[twoBitCompressedSize];
@@ -95,38 +92,36 @@ int main(int argc, char** argv) {
     // Create arrays
     timer.Start();
     fprintf(stdout, "\nAllocating GPU device arrays.\n");
-    GpuSeedTable::deviceArrays.allocateDeviceArrays(twoBitCompressed, record->seq.l, kmerSize);
+    Gpusuffix::deviceArrays.allocateDeviceArrays(twoBitCompressed, record->seq.l, kmerSize);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 
-    // Construct the seed table on GPU
-    // ASSIGNMENT 2 TASK: Parallelize the kernels used in seedTableOnGpu below
-    // (see  src/seedTableOnGpu.cu for details)
+
     timer.Start();
     fprintf(stdout, "Constructing seed table on GPU.\n");
-    GpuSeedTable::seedTableOnGpu(
-        GpuSeedTable::deviceArrays.d_compressedSeq,
-        GpuSeedTable::deviceArrays.d_seqLen,
+    Gpusuffix::suffixOnGpu(
+        Gpusuffix::deviceArrays.d_compressedSeq,
+        Gpusuffix::deviceArrays.d_seqLen,
         kmerSize,
-        GpuSeedTable::deviceArrays.d_array1,
-        GpuSeedTable::deviceArrays.d_array2,
-        GpuSeedTable::deviceArrays.d_array3,
-        GpuSeedTable::deviceArrays.d_array4,
-        GpuSeedTable::deviceArrays.d_SA,
-	GpuSeedTable::deviceArrays.d_done);
+        Gpusuffix::deviceArrays.d_array1,
+        Gpusuffix::deviceArrays.d_array2,
+        Gpusuffix::deviceArrays.d_array3,
+        Gpusuffix::deviceArrays.d_array4,
+        Gpusuffix::deviceArrays.d_SA,
+	Gpusuffix::deviceArrays.d_done);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 
     // Check correctness
     timer.Start();
     // int numValues = 15072434;
-    uint32_t numValues = GpuSeedTable::deviceArrays.d_seqLen;
+    uint32_t numValues = Gpusuffix::deviceArrays.d_seqLen;
     fprintf(stdout, "Printing first %i values of GPU arrays to check correctness.\n", numValues);
-    GpuSeedTable::deviceArrays.printValues(numValues,kmerSize);
+    Gpusuffix::deviceArrays.printValues(numValues,kmerSize);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
     
     // Delete arrays
     timer.Start();
     fprintf(stdout, "Deallocating CPU and GPU arrays.\n");
-    GpuSeedTable::deviceArrays.deallocateDeviceArrays();
+    Gpusuffix::deviceArrays.deallocateDeviceArrays();
     delete [] twoBitCompressed;
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 

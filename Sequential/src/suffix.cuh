@@ -3,7 +3,7 @@
 
 void printGpuProperties();
 
-namespace GpuSeedTable {
+namespace Gpusuffix {
 struct DeviceArrays {
     uint32_t* d_compressedSeq;
     uint32_t d_seqLen;
@@ -22,7 +22,7 @@ struct DeviceArrays {
 
 static DeviceArrays deviceArrays;
 
-void seedTableOnGpu (
+void suffixOnGpu (
     uint32_t* compressedSeq,
     uint32_t seqLen,
     uint32_t kmerSize,
