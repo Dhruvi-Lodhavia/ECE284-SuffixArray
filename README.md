@@ -30,7 +30,7 @@ cd GPU
 ```
 5. Before executing the `run-commands.sh` file, run
 ```
-chmod u+x run_command.sh
+chmod u+x run-commands.sh
 ```
 in order to make the .sh file an executable. 
 This would have to be done in both sequential and gpu folders.
