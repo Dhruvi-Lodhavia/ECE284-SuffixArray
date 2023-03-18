@@ -339,7 +339,7 @@ __global__ void reordering(
     uint32_t d_seqLen,
     uint32_t kmerSize,
     uint32_t numKmers,
-    size_t* d_array2,,
+    size_t* d_array2,
     size_t* d_array1,
     size_t* d_array3) {
 

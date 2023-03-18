@@ -33,22 +33,36 @@ chmod u+x run_command.sh
 in order to make the .sh file an executable. 
 This would have to be done in both sequential and gpu folders.
 
-6. The datasets are given in the `GPU/data` folder. Copy the dataset you want to run in sequential by(e.g. Homo_sapiens_60M.fa). by
+6. The datasets are given in the `GPU/data/Datasets.zip`  
+Unzip the folder by
 ```
-cp -rf ../GPU/data/Homo_sapiens_60M.fa .
+unzip Datasets.zip
 ```
 
-7. Modify the `run-commands.sh` file according to the dataset being used
 
+
+7. Modify the `run-commands.sh` file according to the dataset being used eg.
+
+For sequential - 
+
+```
+./suffix -r ../../GPU/data/Datasets/Homo_sapiens_60M.fa -T 8
+```
+
+For GPU - 
+
+```
+./suffix -r ../data/Datasets/Homo_sapiens_60M.fa -T 8
+```
 
 8. We will be using a Docker container, namely `yatisht/ece284-wi23:latest`, for submitting a job on the cluster containing the right virtual environment to build and test the code. To submit a job that executes `run-commands.sh` script located inside the `Sequential or GPU` directory on a VM instance with 8 CPU cores, 16 GB RAM and 1 GPU device (this is the maxmimum allowed request on the DSMLP platform), the following command can be executed from the VS Code or DSMLP Shell Terminal (replace the username and directory names below appropriately):
 
 ```
-ssh yturakhia@dsmlp-login.ucsd.edu /opt/launch-sh/bin/launch.sh -c 8 -g 1 -m 16 -i yatisht/ece284-wi23:latest -f ${HOME}/ECE284-SuffixArray/Sequential/run-commands.sh
+ssh dlodhavia@dsmlp-login.ucsd.edu /opt/launch-sh/bin/launch.sh -c 8 -g 1 -m 16 -i yatisht/ece284-wi23:latest -f ${HOME}/ECE284-SuffixArray/Sequential/run-commands.sh
 ```
 or
 ```
-ssh yturakhia@dsmlp-login.ucsd.edu /opt/launch-sh/bin/launch.sh -c 8 -g 1 -m 16 -i yatisht/ece284-wi23:latest -f ${HOME}/ECE284-SuffixArray/GPU/run-commands.sh
+ssh dlodhavia@dsmlp-login.ucsd.edu /opt/launch-sh/bin/launch.sh -c 8 -g 1 -m 16 -i yatisht/ece284-wi23:latest -f ${HOME}/ECE284-SuffixArray/GPU/run-commands.sh
 ```
 
 9. steps for comparing results are given at the end of README
@@ -64,7 +78,7 @@ cd ECE284-SuffixArray/extract/
 ```
 2. Copy the dataset (e.g. Homo_sapiens_60M.fa).
 ```
-cp -rf ../../GPU/data/Homo_sapiens_60M.fa .
+cp -rf ../../GPU/data/Datasets/Homo_sapiens_60M.fa .
 ```
 3. Extract relevant information and store it in another text file.
 ```
