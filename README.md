@@ -102,6 +102,7 @@ cp -rf ../../../extract/pattern.txt .
 ```
 7. Run libdivsufsort algorithm and store the suffix array in a text file named 'out_baseline.txt'.
 ```
+chmod u+x mksary
 ./mksary pattern.txt out_baseline.txt
 ```
 
