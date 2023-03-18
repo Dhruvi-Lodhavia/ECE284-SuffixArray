@@ -113,10 +113,16 @@ chmod u+x mksary
 cd ~
 cd ECE284-SuffixArray/compare/
 ```
-2. Run the code to compare the text file results obtained from the proposed implementation and libdivsufsort.
+2. Run the code to compare the text file results obtained from the proposed implementation (GPU-parallel) and libdivsufsort.
 ```
 chmod u+x kseq_test
 ./kseq_test ../GPU/build/out.txt ../libdivsufsort/build/examples/out_baseline.txt
+```
+
+3. To compare the text file results obtained from the proposed implementation (Sequential) and libdivsufsort, run the following.
+```
+chmod u+x kseq_test
+./kseq_test ../Sequential/build/out_suffix.txt ../libdivsufsort/build/examples/out_baseline.txt
 ```
 
 If functionality matches, it flashes the following message -
