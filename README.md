@@ -115,7 +115,8 @@ cd ECE284-SuffixArray/compare/
 ```
 2. Run the code to compare the text file results obtained from the proposed implementation and libdivsufsort.
 ```
-./kseq_test ../../GPU/build/out_GPU.txt ../libdivsufsort/build/examples/out_baseline.txt
+chmod u+x kseq_test
+./kseq_test ../GPU/build/out.txt ../libdivsufsort/build/examples/out_baseline.txt
 ```
 
 If functionality matches, it flashes the following message -
